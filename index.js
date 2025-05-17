@@ -23,6 +23,8 @@ client.on('message', async msg => {
         // imagem → sticker
         if (media.mimetype.startsWith('image/')) {
             await msg.reply(media, undefined, { sendMediaAsSticker: true });
+
+            console.log('Imagem recebida e enviada como sticker.');
             return;
         }
 
