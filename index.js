@@ -1,6 +1,6 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const ffmpegPath = require('ffmpeg-static');
+const ffmpegPath = require('ffmpeg');
 
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: "sticker-bot" }),
@@ -12,7 +12,7 @@ const REQUIRED_CAPTION = "sticker";
 client.on('qr', qr => qrcode.generate(qr, { small: true }));
 client.on('ready', () => console.log('✅ Bot pronto!'));
 
-client.on('message', async msg => {
+client.on('message_create', async msg => {
     try {
         if (!msg.hasMedia || !msg.body) return;
 
