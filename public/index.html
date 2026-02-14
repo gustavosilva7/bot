@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Sticker Bot - Painel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #25D366, #128C7E);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #888;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      backdrop-filter: blur(10px);
+    }
+
+    .status-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #888;
+      transition: all 0.3s ease;
+    }
+
+    .status-dot.connected {
+      background: #25D366;
+      box-shadow: 0 0 12px rgba(37, 211, 102, 0.6);
+    }
+
+    .status-dot.connecting {
+      background: #fbbf24;
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: #ef4444;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-text {
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .qr-box {
+      background: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .qr-box.visible {
+      display: block;
+    }
+
+    .qr-box img {
+      display: block;
+      width: 256px;
+      height: 256px;
+    }
+
+    .qr-placeholder {
+      width: 256px;
+      height: 256px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .qr-placeholder.hidden {
+      display: none;
+    }
+
+    .info-box {
+      background: rgba(37, 211, 102, 0.1);
+      border: 1px solid rgba(37, 211, 102, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .info-box.visible {
+      display: block;
+    }
+
+    .info-box p {
+      color: #25D366;
+      font-size: 0.95rem;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .logs {
+      margin-top: 32px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .logs h3 {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .log-entry {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.8rem;
+      color: #aaa;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-entry.success {
+      color: #25D366;
+    }
+
+    .log-entry.error {
+      color: #ef4444;
+    }
+
+    .log-entry.warning {
+      color: #fbbf24;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #555;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>WhatsApp Sticker Bot</h1>
+      <p>Painel de Controle</p>
+    </div>
+
+    <div class="card">
+      <div class="status-container">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">Desconectado</span>
+      </div>
+
+      <div class="qr-container">
+        <div class="qr-placeholder" id="qrPlaceholder">
+          Clique em "Conectar" para gerar o QR Code
+        </div>
+        <div class="qr-box" id="qrBox">
+          <img id="qrImage" src="" alt="QR Code">
+        </div>
+        <div class="info-box" id="infoBox">
+          <p>Bot conectado e funcionando!</p>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button class="btn btn-primary" id="connectBtn" onclick="connect()">
+          <span id="connectBtnText">Conectar</span>
+        </button>
+        <button class="btn btn-danger" id="disconnectBtn" onclick="disconnect()" disabled>
+          Desconectar
+        </button>
+      </div>
+
+      <div class="logs">
+        <h3>Logs</h3>
+        <div id="logsContainer">
+          <div class="log-entry">Aguardando conexão...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Envie uma imagem ou vídeo com a legenda "sticker" para criar figurinhas</p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const qrPlaceholder = document.getElementById('qrPlaceholder');
+    const qrBox = document.getElementById('qrBox');
+    const qrImage = document.getElementById('qrImage');
+    const infoBox = document.getElementById('infoBox');
+    const connectBtn = document.getElementById('connectBtn');
+    const connectBtnText = document.getElementById('connectBtnText');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const logsContainer = document.getElementById('logsContainer');
+
+    function addLog(message, type = '') {
+      const entry = document.createElement('div');
+      entry.className = 'log-entry ' + type;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logsContainer.insertBefore(entry, logsContainer.firstChild);
+      
+      // Limitar logs
+      while (logsContainer.children.length > 50) {
+        logsContainer.removeChild(logsContainer.lastChild);
+      }
+    }
+
+    function updateStatus(status) {
+      statusDot.className = 'status-dot ' + status;
+      
+      switch (status) {
+        case 'connected':
+          statusText.textContent = 'Conectado';
+          qrPlaceholder.classList.add('hidden');
+          qrBox.classList.remove('visible');
+          infoBox.classList.add('visible');
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+          connectBtnText.textContent = 'Conectar';
+          break;
+        case 'connecting':
+          statusText.textContent = 'Conectando...';
+          qrPlaceholder.classList.add('hidden');
+          infoBox.classList.remove('visible');
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = true;
+          connectBtnText.innerHTML = '<div class="spinner"></div>';
+          break;
+        case 'disconnected':
+          statusText.textContent = 'Desconectado';
+          qrPlaceholder.classList.remove('hidden');
+          qrBox.classList.remove('visible');
+          infoBox.classList.remove('visible');
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+          connectBtnText.textContent = 'Conectar';
+          break;
+      }
+    }
+
+    function connect() {
+      socket.emit('connect-client');
+      updateStatus('connecting');
+      addLog('Iniciando conexão...', 'warning');
+    }
+
+    function disconnect() {
+      socket.emit('disconnect-client');
+      addLog('Desconectando...', 'warning');
+    }
+
+    // Socket events
+    socket.on('qr', (qrDataUrl) => {
+      qrImage.src = qrDataUrl;
+      qrBox.classList.add('visible');
+      qrPlaceholder.classList.add('hidden');
+      infoBox.classList.remove('visible');
+      addLog('QR Code gerado - Escaneie com o WhatsApp', 'warning');
+    });
+
+    socket.on('ready', () => {
+      updateStatus('connected');
+      addLog('Bot conectado com sucesso!', 'success');
+    });
+
+    socket.on('disconnected', (reason) => {
+      updateStatus('disconnected');
+      addLog(`Desconectado: ${reason || 'Motivo desconhecido'}`, 'error');
+    });
+
+    socket.on('authenticated', () => {
+      addLog('Autenticado com sucesso!', 'success');
+    });
+
+    socket.on('auth_failure', (msg) => {
+      updateStatus('disconnected');
+      addLog(`Falha na autenticação: ${msg}`, 'error');
+    });
+
+    socket.on('status', (data) => {
+      updateStatus(data.status);
+      if (data.message) {
+        addLog(data.message);
+      }
+    });
+
+    socket.on('log', (data) => {
+      addLog(data.message, data.type || '');
+    });
+
+    // Verificar status inicial
+    socket.emit('get-status');
+  </script>
+</body>
+</html>

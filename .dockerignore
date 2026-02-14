@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.env.*
+*.md
+temp/*
+.wwebjs_auth
+.wwebjs_cache
+Dockerfile*
+docker-compose*
+railway.json
+.dockerignore

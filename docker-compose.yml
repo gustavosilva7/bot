@@ -1,12 +1,14 @@
-version: '3.8'
-
 services:
   whatsapp-bot:
     build: .
     container_name: whatsapp-bot
     restart: unless-stopped
+    ports:
+      - "8282:8282"
     volumes:
       - ./wweb-session:/app/wweb-session
       - ./temp:/app/temp
     environment:
       - FFMPEG_PATH=/usr/bin/ffmpeg
+      - STORAGE_UPLOAD_URL=${STORAGE_UPLOAD_URL}
+      - PORT=${PORT}
