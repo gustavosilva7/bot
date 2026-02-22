@@ -8,8 +8,8 @@ npm-debug.log
 temp/*
 .wwebjs_auth
 .wwebjs_cache
-wweb-session
 Dockerfile*
 docker-compose*
 railway.json
 .dockerignore
+
