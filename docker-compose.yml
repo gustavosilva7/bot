@@ -4,11 +4,12 @@ services:
     container_name: whatsapp-bot
     restart: unless-stopped
     ports:
-      - "8282:8282"
+      - "8080:8080"
     volumes:
-      - ./wweb-session:/app/wweb-session
+      - ./.wwebjs_auth:/app/.wwebjs_auth
+      - ./.wwebjs_cache:/app/.wwebjs_cache
       - ./temp:/app/temp
     environment:
       - FFMPEG_PATH=/usr/bin/ffmpeg
       - STORAGE_UPLOAD_URL=${STORAGE_UPLOAD_URL}
-      - PORT=${PORT}
+      - PORT=8080

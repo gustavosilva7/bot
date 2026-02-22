@@ -25,7 +25,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   }
 });
-const PORT = process.env.PORT || 8282;
+const PORT = process.env.PORT || 8080;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
