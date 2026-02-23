@@ -145,15 +145,50 @@ function emitLog(message, type = '') {
   io.emit('log', { message, type });
 }
 
+// Caminho opcional do Chrome/Edge (evita falha do Chromium bundled no Windows)
+function getChromePath() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  if (process.platform === 'win32') {
+    const edgePath = path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'Edge', 'Application', 'msedge.exe');
+    const chromePath = path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe');
+    if (fs.existsSync(edgePath)) return edgePath;
+    if (fs.existsSync(chromePath)) return chromePath;
+  }
+  return undefined;
+}
+
 // Função para criar e configurar o cliente WhatsApp
 function createClient() {
+  const chromePath = getChromePath();
+  const isWindows = process.platform === 'win32';
+  const baseArgs = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--no-first-run',
+    '--disable-extensions',
+    '--disable-software-rasterizer'
+  ];
+  // No Windows com Chrome local, evita args que causam "Code: 0"
+  if (!isWindows || !chromePath) {
+    baseArgs.push('--no-zygote', '--single-process', '--disable-accelerated-2d-canvas');
+  }
+  const puppeteerOpts = {
+    headless: true,
+    args: baseArgs,
+    ignoreDefaultArgs: ['--enable-automation']
+  };
+  if (chromePath) {
+    puppeteerOpts.executablePath = chromePath;
+  }
+
   client = new Client({
     authStrategy: new LocalAuth({ clientId: "sticker-bot" }),
     ffmpegPath: process.env.FFMPEG_PATH || '/usr/bin/ffmpeg',
-    puppeteer: {
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+    puppeteer: puppeteerOpts
   });
 
   client.on('qr', async (qr) => {

@@ -1,8 +1,9 @@
 FROM node:18-slim
 
-# Instala dependências do sistema para o Puppeteer e ffmpeg
+# Instala Chromium (sistema), dependências do Puppeteer e ffmpeg
 RUN apt-get update && apt-get install -y \
   ffmpeg \
+  chromium \
   ca-certificates \
   fonts-liberation \
   libasound2 \
@@ -42,18 +43,18 @@ COPY . .
 RUN mkdir -p /app/temp /app/.wwebjs_auth /app/.wwebjs_cache && \
     chmod -R 777 /app/temp /app/.wwebjs_auth /app/.wwebjs_cache
 
-# Variáveis de ambiente
+# Usa Chromium do sistema (instalado acima); não baixa o bundle do Puppeteer
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
-ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu"
 ENV NODE_ENV=production
 
-# Expõe a porta
-EXPOSE 8787
+# Expõe a porta (fly.toml usa internal_port 8080)
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8787/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Executa o app
 CMD ["node", "index.js"]

@@ -6,6 +6,12 @@
 app = 'bot-dwdfjg'
 primary_region = 'ams'
 
+[env]
+  PORT = "8080"
+  # PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"  # Só se instalar Chromium no Dockerfile
+  # FFMPEG_PATH = "/usr/bin/ffmpeg"
+  # BASE_URL_API_STORAGE = "sua-url"  # Ou use secrets para dados sensíveis
+
 [build]
 
 [http_service]
