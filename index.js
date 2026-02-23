@@ -31,8 +31,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check para Railway/Render
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
+  res.status(200).json({
+    status: 'ok',
     botStatus: clientStatus,
     uptime: process.uptime()
   });
@@ -41,6 +41,7 @@ app.get('/health', (req, res) => {
 // Estado do cliente
 let client = null;
 let clientStatus = 'disconnected';
+let isShuttingDown = false;
 
 const REQUIRED_CAPTION = "sticker";
 // Usa o serviço de storage (API) quando configurado; senão usa pasta local temp
@@ -78,7 +79,7 @@ async function converterImagemParaSticker(bufferInput) {
     })
     .webp({ quality: 80 })
     .toBuffer();
-  
+
   return webpBuffer;
 }
 
@@ -119,11 +120,11 @@ async function converterParaStickerAnimado(bufferInput, nomeBase, extensao = 'mp
       .on('end', () => {
         try {
           const bufferWebp = fs.readFileSync(caminhoOutput);
-          
+
           // Limpa arquivos temporários imediatamente
           limparArquivo(caminhoInput);
           limparArquivo(caminhoOutput);
-          
+
           resolve(bufferWebp);
         } catch (err) {
           reject(err);
@@ -142,8 +143,53 @@ async function converterParaStickerAnimado(bufferInput, nomeBase, extensao = 'mp
 // Função para emitir log para todos os clientes
 function emitLog(message, type = '') {
   console.log(message);
-  io.emit('log', { message, type });
+  if (!isShuttingDown) io.emit('log', { message, type });
 }
+
+// Encerramento gracioso (Railway/container envia SIGTERM ao parar)
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`\n${signal} recebido. Encerrando graciosamente...`);
+
+  if (client) {
+    try {
+      await client.destroy();
+    } catch (err) {
+      console.error('Erro ao destruir cliente WhatsApp (ignorado):', err.message);
+    }
+    client = null;
+    clientStatus = 'disconnected';
+  }
+
+  server.close(() => {
+    console.log('Servidor fechado.');
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error('Timeout no shutdown, forçando saída.');
+    process.exit(1);
+  }, 15000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Evita crash por "Target closed" quando o Chromium morre (OOM, container parando)
+process.on('uncaughtException', (err) => {
+  const msg = err && err.message ? err.message : String(err);
+  const isTargetClosed = msg.includes('Target closed') || (err.name === 'TargetCloseError') || (err.cause && err.cause.name === 'ProtocolError');
+  if (isTargetClosed && client) {
+    console.warn('Browser/Chromium fechado inesperadamente (container parando ou OOM). Marcando como desconectado.');
+    clientStatus = 'disconnected';
+    try { io.emit('disconnected', msg); } catch (_) { }
+    client = null;
+    return;
+  }
+  console.error('uncaughtException:', err);
+  process.exit(1);
+});
 
 // Caminho opcional do Chrome/Edge (evita falha do Chromium bundled no Windows)
 function getChromePath() {
@@ -167,10 +213,16 @@ function createClient() {
     '--no-sandbox',
     '--disable-setuid-sandbox',
     '--disable-dev-shm-usage',
+    '--disable-extensions',
     '--disable-gpu',
     '--no-first-run',
-    '--disable-extensions',
-    '--disable-software-rasterizer'
+    '--disable-software-rasterizer',
+    '--disable-dev-tools',
+    '--disable-background-networking',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--mute-audio',
+    '--no-default-browser-check'
   ];
   // No Windows com Chrome local, evita args que causam "Code: 0"
   if (!isWindows || !chromePath) {
@@ -178,6 +230,7 @@ function createClient() {
   }
   const puppeteerOpts = {
     headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
     args: baseArgs,
     ignoreDefaultArgs: ['--enable-automation']
   };
@@ -193,7 +246,7 @@ function createClient() {
 
   client.on('qr', async (qr) => {
     qrcode.generate(qr, { small: true });
-    
+
     // Gerar QR code como imagem para a web
     try {
       const qrDataUrl = await QRCode.toDataURL(qr, { width: 256 });
@@ -247,7 +300,7 @@ function createClient() {
           emitLog('🔄 Convertendo imagem para quadrado...', 'warning');
           const bufferImagem = Buffer.from(media.data, 'base64');
           const webpBuffer = await converterImagemParaSticker(bufferImagem);
-          
+
           const sticker = new MessageMedia('image/webp', webpBuffer.toString('base64'));
           await msg.reply(sticker, undefined, { sendMediaAsSticker: true });
           emitLog('📸 Imagem convertida em figurinha quadrada.', 'success');
@@ -328,7 +381,7 @@ io.on('connection', (socket) => {
       emitLog('🔄 Iniciando cliente WhatsApp...', 'warning');
       clientStatus = 'connecting';
       io.emit('status', { status: 'connecting' });
-      
+
       if (client) {
         try {
           await client.destroy();
@@ -336,7 +389,7 @@ io.on('connection', (socket) => {
           // Ignorar erros ao destruir cliente antigo
         }
       }
-      
+
       client = createClient();
       await client.initialize();
     } catch (err) {
