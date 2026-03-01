@@ -279,6 +279,13 @@ function createClient() {
     io.emit('disconnected', reason);
   });
 
+  client.on('message', async (message) => {
+    console.log('Mensagem recebida:', message.from, message.body);
+    if (message.body === '!ping') {
+      await message.reply('pong');
+    }
+  });
+
   client.on('message_create', async msg => {
     try {
       if (!msg.hasMedia || !msg.body) return;
