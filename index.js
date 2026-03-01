@@ -279,7 +279,7 @@ function createClient() {
     io.emit('disconnected', reason);
   });
 
-  client.on('message', async (message) => {
+  client.on('message_create', async (message) => {
     console.log('Mensagem recebida:', message.from, message.body);
     if (message.body === '!ping') {
       await message.reply('pong');
