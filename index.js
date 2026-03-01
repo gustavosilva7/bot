@@ -247,7 +247,6 @@ function createClient() {
   client.on('qr', async (qr) => {
     qrcode.generate(qr, { small: true });
 
-    // Gerar QR code como imagem para a web
     try {
       const qrDataUrl = await QRCode.toDataURL(qr, { width: 256 });
       io.emit('qr', qrDataUrl);
